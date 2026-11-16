@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hitster Serienintros</title>
+  <meta name="description" content="Musik-Zeitleistenspiel mit Kinderserien-Intros aus dem deutschen TV – Pass-and-Play auf einem Gerät.">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="on-setup">
+  <!-- Große, blasse Neon-Ringe: wie eine stark vergrößerte, angeschnittene Kartenvorderseite -->
+  <div class="bg-ringe" id="bg-ringe" aria-hidden="true"></div>
+
+  <!-- YouTube-Player: normalerweise 1x1 px und unsichtbar (nicht display:none), bei Werbung einblendbar -->
+  <div id="yt-wrap" aria-hidden="true">
+    <div id="yt-player"></div>
+    <div class="yt-mask yt-mask-left"></div>
+    <div class="yt-mask yt-mask-top"></div>
+    <div class="yt-mask yt-mask-right"></div>
+    <div class="yt-mask yt-mask-bottom"></div>
+    <div class="yt-mask yt-mask-hint"></div>
+  </div>
+  <div id="yt-bar" class="yt-bar" hidden>
+    <span id="yt-bar-text"></span>
+    <div class="row">
+      <button class="btn small ghost" id="btn-unmask-player">Ganzes Bild (verrät das Intro)</button>
+      <button class="btn small" id="btn-hide-player">Schließen</button>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <button type="button" class="brand" id="btn-home" aria-label="Zur Startseite">
+      <span class="brand-marke" data-marke="18"></span>
+      <span>Hitster <b>Serienintros</b></span>
+    </button>
+    <nav class="view-tabs" aria-label="Ansicht">
+      <button type="button" id="tab-play" class="on">Spielen</button>
+      <button type="button" id="tab-stats">Statistik</button>
+    </nav>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btn-menu" hidden aria-label="Spielmenü" data-ikon="menu"></button>
+      <button class="icon-btn" id="btn-info" aria-label="Info">i</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= SETUP ================= -->
+    <section id="screen-setup" class="screen">
+      <div class="hero">
+        <span class="hero-marke" data-marke="18" data-dreht="1"></span>
+        <div class="hero-text">
+          <h1><span>Hitster</span> <b>Serienintros</b></h1>
+          <div class="hero-sub">Kinderserien-Intros aus dem deutschen TV · Set KTV01</div>
+        </div>
+      </div>
+
+      <div id="loading" class="panel center">Lade Intros …</div>
+
+      <div id="setup" hidden>
+        <div id="resume-box" class="panel resume" hidden>
+          <div>
+            <strong>Gespeichertes Spiel gefunden</strong>
+            <div class="muted" id="resume-info"></div>
+          </div>
+          <div class="row">
+            <button class="btn primary" id="btn-resume">Spiel fortsetzen</button>
+            <button class="btn danger" id="btn-discard">Verwerfen</button>
+          </div>
+        </div>
+
+        <div id="noid-hint" class="panel warn" hidden></div>
+
+        <div class="panel" id="panel-players">
+          <h2>Spieler</h2>
+          <div id="player-list" class="player-list"></div>
+          <div class="row">
+            <button class="btn ghost" id="btn-add-player">+ Spieler</button>
+            <button class="btn ghost" id="btn-remove-player">− Spieler</button>
+          </div>
+        </div>
+
+        <div class="panel" id="panel-target">
+          <h2>Ziel: Karten in der Zeitleiste</h2>
+          <div class="radio-grid" id="target-opts"></div>
+        </div>
+
+        <div class="panel" id="panel-pool">
+          <h2>Intro-Pool</h2>
+          <h3>Kategorien <span class="muted small" id="kat-info"></span></h3>
+          <div id="kat-chips" class="chips"></div>
+          <h3>Zeitraum</h3>
+          <div class="row years">
+            <label class="field inline"><span>von</span><input type="number" id="inp-from" inputmode="numeric" enterkeyhint="done"></label>
+            <label class="field inline"><span>bis</span><input type="number" id="inp-to" inputmode="numeric" enterkeyhint="done"></label>
+          </div>
+          <div class="row quick" id="range-quick">
+            <button type="button" class="btn small" data-quick="alle">Alle</button>
+            <button type="button" class="btn small" data-quick="klassiker">Klassiker bis 1999</button>
+            <button type="button" class="btn small" data-quick="kern">2000–2015</button>
+          </div>
+        </div>
+
+        <details class="panel advanced" id="advanced">
+          <summary>Erweiterte Einstellungen</summary>
+
+          <label class="field">
+            <span>Ziel frei wählen (3 bis 30 Karten)</span>
+            <input type="number" id="inp-target" min="3" max="30" value="10" inputmode="numeric" enterkeyhint="done">
+          </label>
+
+          <h3>Zeit</h3>
+          <label class="switch"><input type="checkbox" id="chk-time"><span class="slider"></span>
+            <span>Zeit tracken <small class="muted">(Hör- und Denkzeit bis zum Auflösen, nur zur Anzeige)</small></span></label>
+
+          <h3>Intro testen</h3>
+          <div class="muted small hint">Spielt ein bestimmtes Intro, zum Beispiel um den Start zu prüfen. Achtung: Das verrät natürlich die Lösung. Suche nach Serie, Songtitel, Sender oder Jahr.</div>
+          <input type="text" class="test-input" id="test-search" autocomplete="off" enterkeyhint="done" placeholder="z. B. Biene Maja oder 1976" aria-label="Intro suchen">
+          <ol id="test-results" class="such-liste"></ol>
+          <div id="test-box" class="test-box" hidden>
+            <div id="test-info"></div>
+            <div id="test-pos" class="test-pos"></div>
+            <div class="row">
+              <button type="button" class="btn small" id="btn-test-start"><i data-ikon="play"></i> Ab Start</button>
+              <button type="button" class="btn small" id="btn-test-zero"><i data-ikon="anfang"></i> Ab 0:00</button>
+              <button type="button" class="btn small" id="btn-test-toggle"><i data-ikon="pause"></i> Pause</button>
+              <button type="button" class="btn small" id="btn-test-video"><i data-ikon="tv"></i> Video zeigen</button>
+            </div>
+          </div>
+        </details>
+
+        <div class="start-bar">
+          <div class="pool-count"><b id="pool-count">0</b> Intros im Pool <span class="muted small" id="pool-need"></span></div>
+          <button class="btn primary big" id="btn-start" disabled>Spiel starten</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= SPIEL ================= -->
+    <section id="screen-game" class="screen" hidden>
+      <div id="scoreboard" class="scoreboard"></div>
+      <div id="turn-banner" class="turn-banner"></div>
+      <div class="timeline-wrap">
+        <div id="timeline" class="timeline"></div>
+      </div>
+      <div id="deck" class="deck"></div>
+      <div id="controls" class="controls"></div>
+      <label class="vol-row"><span class="vol-ikon" data-ikon="laut0"></span><input type="range" class="vol" min="0" max="100" step="5" value="100" aria-label="Lautstärke"><span class="vol-ikon" data-ikon="laut1"></span></label>
+      <div id="reveal" class="reveal" hidden></div>
+    </section>
+
+    <!-- ================= STATISTIK ================= -->
+    <section id="screen-stats" class="screen" hidden>
+      <h2 class="stats-title">Statistik</h2>
+      <div id="stats-tiles" class="tiles"></div>
+      <div class="stats-columns">
+        <div class="panel">
+          <h3>Nach Kategorie</h3>
+          <div id="stats-kategorie" class="bars"></div>
+        </div>
+        <div class="panel">
+          <h3>Nach Jahrzehnt</h3>
+          <div id="stats-jahrzehnt" class="bars"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Nach Sender</h3>
+        <div id="stats-sender" class="bars"></div>
+        <button type="button" class="link-btn" id="btn-sender-more" hidden>Alle Sender anzeigen</button>
+      </div>
+      <div class="panel">
+        <h3>Intros suchen</h3>
+        <label class="field stats-search">
+          <span>Serie, Sender oder Jahr</span>
+          <input type="text" id="stats-input" autocomplete="off" enterkeyhint="done" placeholder="z. B. Pokémon oder 1999">
+        </label>
+        <div id="stats-result" class="stats-result"></div>
+      </div>
+      <div class="panel">
+        <h3>Vergangene Spiele</h3>
+        <div id="stats-history" class="history-list"></div>
+        <button type="button" class="link-btn" id="btn-clear-history" hidden>Verlauf löschen</button>
+      </div>
+    </section>
+
+    <!-- ================= ENDE ================= -->
+    <section id="screen-end" class="screen" hidden>
+      <canvas id="fireworks" hidden aria-hidden="true"></canvas>
+      <div class="panel center end">
+        <span class="end-marke" id="end-tv" data-marke="18" data-dreht="1"></span>
+        <h2 id="end-title">Gewonnen!</h2>
+        <div id="end-sub" class="muted"></div>
+        <div id="end-podium" class="podium"></div>
+        <div id="end-ranking"></div>
+        <div id="end-times" class="end-times" hidden></div>
+        <div class="row center">
+          <button class="btn primary" id="btn-new-game">Neues Spiel</button>
+        </div>
+      </div>
+      <div class="panel end-cards">
+        <div id="end-tabs" class="row center"></div>
+        <h3 id="end-tl-title"></h3>
+        <div class="timeline-wrap"><div id="end-tl" class="timeline"></div></div>
+        <h3 id="end-wrong-title"></h3>
+        <div class="timeline-wrap"><div id="end-wrong" class="timeline"></div></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Dialoge -->
+  <dialog id="dlg-info">
+    <form method="dialog" class="dlg">
+      <h2>Info</h2>
+      <div id="info-data" class="small"></div>
+      <h3>Abspielfehler <span class="muted small" id="err-count"></span></h3>
+      <div id="err-list" class="err-list small"></div>
+      <div class="row">
+        <button class="btn danger" type="button" id="btn-clear-errors">Fehler-Log löschen</button>
+        <button class="btn primary" value="close">Schließen</button>
+      </div>
+      <p class="muted small">Spielregeln: Höre das Intro, ziehe die verdeckte Karte an die passende Stelle deiner Zeitleiste
+        und löse auf. Gleiche Jahre zählen als richtig. Maßgeblich ist das Jahr der deutschen Erstausstrahlung.
+        Jeder Spieler darf einmal pro Spiel gratis ein Intro überspringen. Ist ein Video nicht abspielbar, gibt es immer kostenlos eine neue Karte.</p>
+      <p class="muted small">Erreicht jemand das Ziel, wird die Runde nur noch zu Ende gespielt, solange jemand aufholen kann.
+        Bei gleich vielen Karten teilen sich die Spieler den Sieg. Allein spielst du, bis du das Ziel erreichst, und siehst am Ende deine Rundenzahl.</p>
+      <p class="muted small">Die Intros stammen von YouTube und werden dort abgespielt. Set KTV01, passend zu den gedruckten Karten.</p>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-menu">
+    <form method="dialog" class="dlg">
+      <h2>Spielmenü</h2>
+      <div class="col">
+        <button class="btn" value="close">Weiterspielen</button>
+        <button class="btn danger" type="button" id="btn-end-game">Spiel beenden &amp; Wertung</button>
+        <button class="btn danger" type="button" id="btn-abort-game">Abbrechen (zurück zum Setup)</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-handicap">
+    <form method="dialog" class="dlg">
+      <h2 id="hc-title">Handicap</h2>
+      <p class="muted small">Eigene Kategorien und eigener Zeitraum für diesen Spieler. Keine Kategorie gewählt heißt: alle.</p>
+      <h3>Kategorien</h3>
+      <div id="hc-kat-chips" class="chips"></div>
+      <h3>Zeitraum</h3>
+      <div class="row years">
+        <label class="field inline"><span>von</span><input type="number" id="hc-from" inputmode="numeric" enterkeyhint="done"></label>
+        <label class="field inline"><span>bis</span><input type="number" id="hc-to" inputmode="numeric" enterkeyhint="done"></label>
+      </div>
+      <div class="row quick" id="hc-quick">
+        <button type="button" class="btn small" data-quick="alle">Alle</button>
+        <button type="button" class="btn small" data-quick="klassiker">Klassiker bis 1999</button>
+        <button type="button" class="btn small" data-quick="kern">2000–2015</button>
+      </div>
+      <div class="muted small" id="hc-count"></div>
+      <div class="row">
+        <button class="btn ghost" type="button" id="hc-reset">Kein Handicap</button>
+        <button class="btn primary" type="button" id="hc-ok">Übernehmen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-confirm">
+    <form method="dialog" class="dlg">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text"></p>
+      <div class="row">
+        <button class="btn ghost" type="button" id="confirm-cancel"></button>
+        <button class="btn primary" type="button" id="confirm-ok"></button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-timeline">
+    <form method="dialog" class="dlg wide">
+      <h2 id="tl-title"></h2>
+      <div class="timeline-wrap"><div id="tl-view" class="timeline"></div></div>
+      <div class="row"><button class="btn primary" value="close">Schließen</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

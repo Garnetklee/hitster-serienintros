@@ -1,0 +1,16 @@
+# Rohdaten und Caches: groß und jederzeit neu erzeugbar
+data/raw/
+
+# API-Keys
+.env
+
+__pycache__/
+*.pyc
+*.log
+.venv/
+.claude/*
+!.claude/verbesserungen-profil.md
+
+# Kartenprojekt: eigener Fork und Druck-PDFs gehören nicht in dieses Repo
+songseeker/
+*.pdf

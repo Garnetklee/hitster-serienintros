@@ -1,0 +1,5 @@
+reportlab
+qrcode
+pillow
+pymupdf
+opencv-python-headless
